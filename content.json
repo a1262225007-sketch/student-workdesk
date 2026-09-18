@@ -1,0 +1,10 @@
+{
+  "notices": [],
+  "duty": [],
+  "externalRegistration": {
+    "title": "活动处理快速登记",
+    "description": "处理完成后，请打开外部登记表填写活动名称、处理人和处理结果。",
+    "url": "",
+    "buttonLabel": "打开快速登记"
+  }
+}
