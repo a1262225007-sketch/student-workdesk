@@ -1,0 +1,386 @@
+:root {
+  --bg: #edf1f5;
+  --surface: #ffffff;
+  --surface-2: #f6f8fb;
+  --ink: #182230;
+  --muted: #66727f;
+  --line: #d9e0e8;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --green: #16855a;
+  --red: #c2433a;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid #c6cfd9;
+  border-radius: 6px;
+  background: #fff;
+}
+
+input,
+select {
+  height: 34px;
+  padding: 0 9px;
+}
+
+textarea {
+  min-height: 76px;
+  padding: 8px 9px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 72px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.admin-topbar h1 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.admin-topbar p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.admin-main {
+  width: min(1180px, calc(100% - 28px));
+  margin: 18px auto 60px;
+}
+
+.admin-panel {
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(20, 30, 45, 0.04), 0 6px 18px rgba(20, 30, 45, 0.04);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.panel-heading h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.panel-heading p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge.connected {
+  background: #e9f7ef;
+  color: var(--green);
+}
+
+.connection-grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(180px, 1fr) 100px minmax(220px, 1.2fr);
+  gap: 10px;
+}
+
+.connection-grid label,
+.external-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.connection-grid label > span,
+.external-grid label > span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.token-field {
+  grid-column: 1 / -1;
+}
+
+.connection-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.text-link {
+  color: var(--accent-dark);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 5px 13px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.button-primary:hover {
+  background: var(--accent-dark);
+}
+
+.button-secondary {
+  border-color: var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+
+.button-secondary:hover {
+  background: var(--surface-2);
+}
+
+.button-danger {
+  border-color: rgba(194, 67, 58, 0.28);
+  background: #fff;
+  color: var(--red);
+}
+
+.editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(260px, 1.8fr) auto auto;
+  gap: 9px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+
+.edit-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.edit-card label > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.edit-card .pin-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.edit-card .pin-label input {
+  width: 16px;
+  height: 16px;
+}
+
+.edit-card.duty-edit {
+  grid-template-columns: 106px 145px minmax(180px, 1.2fr) minmax(220px, 1.5fr) auto;
+}
+
+.external-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.sticky-actions {
+  position: sticky;
+  bottom: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(20, 30, 45, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+.sticky-actions > div {
+  display: flex;
+  gap: 8px;
+}
+
+#saveStatus {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.toast-region {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(380px, calc(100vw - 36px));
+}
+
+.toast {
+  padding: 10px 13px;
+  border-radius: 7px;
+  background: #1d2733;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .connection-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .token-field,
+  .connection-actions {
+    grid-column: 1 / -1;
+  }
+
+  .edit-card,
+  .edit-card.duty-edit {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .edit-card .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 580px) {
+  .admin-topbar,
+  .sticky-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .connection-grid,
+  .external-grid,
+  .edit-card,
+  .edit-card.duty-edit {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width {
+    grid-column: auto;
+  }
+
+  .sticky-actions > div {
+    flex-direction: column;
+  }
+}

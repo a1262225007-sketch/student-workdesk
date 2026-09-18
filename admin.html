@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>工作台后台</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-topbar">
+    <div>
+      <h1>工作台后台</h1>
+      <p>维护公共通知、星期排班和外部登记入口</p>
+    </div>
+    <a href="index.html" class="button button-secondary" target="_blank" rel="noopener">查看公开页面</a>
+  </header>
+
+  <main class="admin-main">
+    <section class="admin-panel connection-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>连接 GitHub 仓库</h2>
+          <p>访问令牌只保存在当前浏览器标签页，不会写入网站文件。</p>
+        </div>
+        <span id="connectionBadge" class="badge">未连接</span>
+      </div>
+
+      <form id="connectionForm" class="connection-grid">
+        <label>
+          <span>GitHub 用户名</span>
+          <input id="owner" name="owner" autocomplete="username" placeholder="例如 vv-88" required>
+        </label>
+        <label>
+          <span>仓库名</span>
+          <input id="repo" name="repo" placeholder="例如 student-workdesk" required>
+        </label>
+        <label>
+          <span>分支</span>
+          <input id="branch" name="branch" value="main" required>
+        </label>
+        <label>
+          <span>数据文件路径</span>
+          <input id="filePath" name="filePath" value="data/content.json" required>
+        </label>
+        <label class="token-field">
+          <span>Fine-grained Personal Access Token</span>
+          <input id="token" name="token" type="password" autocomplete="off" placeholder="github_pat_..." required>
+        </label>
+        <div class="connection-actions">
+          <a class="text-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">创建访问令牌</a>
+          <button class="button button-primary" type="submit">连接并读取</button>
+        </div>
+      </form>
+      <p class="hint">令牌权限只需要选择该仓库的 <strong>Contents: Read and write</strong>。</p>
+    </section>
+
+    <div id="editor" class="editor hidden">
+      <section class="admin-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>公共通知</h2>
+            <p>所有访问者都能看到，置顶通知优先显示。</p>
+          </div>
+          <button id="addNotice" class="button button-secondary" type="button">添加通知</button>
+        </div>
+        <div id="noticeEditor" class="editor-list"></div>
+      </section>
+
+      <section class="admin-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>星期排班</h2>
+            <p>按星期展示，同一星期下按时间排序。</p>
+          </div>
+          <button id="addDuty" class="button button-secondary" type="button">添加班次</button>
+        </div>
+        <div id="dutyEditor" class="editor-list"></div>
+      </section>
+
+      <section class="admin-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>活动处理快速登记</h2>
+            <p>填写一个无需登录即可提交的腾讯问卷、金山表单或其它外部登记网址。</p>
+          </div>
+        </div>
+        <div class="external-grid">
+          <label>
+            <span>模块标题</span>
+            <input id="externalTitle">
+          </label>
+          <label>
+            <span>按钮文字</span>
+            <input id="externalButtonLabel">
+          </label>
+          <label class="full-width">
+            <span>外部登记网址</span>
+            <input id="externalUrl" type="url" placeholder="https://...">
+          </label>
+          <label class="full-width">
+            <span>说明文字</span>
+            <textarea id="externalDescription" rows="3"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="sticky-actions">
+        <span id="saveStatus">尚未保存</span>
+        <div>
+          <button id="exportJson" class="button button-secondary" type="button">导出 JSON</button>
+          <button id="saveChanges" class="button button-primary" type="button">提交到 GitHub</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
+  <script src="admin.js"></script>
+</body>
+</html>
