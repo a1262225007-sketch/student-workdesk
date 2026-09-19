@@ -2,9 +2,9 @@
   "notices": [],
   "duty": [],
   "externalRegistration": {
-    "title": "活动处理快速登记",
-    "description": "处理完成后，请打开外部登记表填写活动名称、处理人和处理结果。",
-    "url": "",
-    "buttonLabel": "打开快速登记"
+    "title": "第二课堂值班总结",
+    "description": "处理完成后，请打开共享表格填写或修改当次值班总结。",
+    "url": "https://365.kdocs.cn/l/cbUAXMQrRYFp",
+    "buttonLabel": "打开共享表格"
   }
 }
