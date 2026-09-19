@@ -35,7 +35,7 @@
     },
     {
       "id": "duty-demo-wednesday",
-      "day": 2,
+      "day": 1,
       "time": "18:30-20:30",
       "task": "活动室巡查",
       "people": [
@@ -44,12 +44,48 @@
     },
     {
       "id": "duty-demo-saturday",
-      "day": 5,
+      "day": 2,
       "time": "09:00-11:00",
       "task": "周末资料整理",
       "people": [
         "小林",
         "小周"
+      ]
+    },
+    {
+      "id": "mu8p8axq-59b94i",
+      "day": 3,
+      "time": "1",
+      "task": "1",
+      "people": [
+        "2"
+      ]
+    },
+    {
+      "id": "mu8p8fxu-jqaq7i",
+      "day": 4,
+      "time": "1",
+      "task": "1",
+      "people": [
+        "3"
+      ]
+    },
+    {
+      "id": "mu8p8hpn-s78oe7",
+      "day": 5,
+      "time": "1",
+      "task": "1",
+      "people": [
+        "4"
+      ]
+    },
+    {
+      "id": "mu8p8kil-u3kq0j",
+      "day": 6,
+      "time": "1",
+      "task": "1",
+      "people": [
+        "5"
       ]
     }
   ],
