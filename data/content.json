@@ -1,16 +1,55 @@
 {
   "notices": [
-    {"id":"notice-demo-pinned","title":"本周值班安排已更新","body":"请各位同学按最新排班准时到岗，如需调班请提前联系负责人。","pinned":true,"createdAt":1789772400000},
-    {"id":"notice-demo-normal","title":"活动材料归档提醒","body":"本周活动结束后，请将签到、照片和总结材料整理到对应文件夹。","pinned":false,"createdAt":1789815600000}
+    {
+      "id": "notice-demo-pinned",
+      "title": "本周值班安排已更新",
+      "body": "请各位同学按最新排班准时到岗，如需调班请提前联系负责人。",
+      "pinned": true,
+      "createdAt": 1789772400000
+    },
+    {
+      "id": "notice-demo-normal",
+      "title": "活动材料归档提醒",
+      "body": "本周活动结束后，请将签到、照片和总结材料整理到对应文件夹。",
+      "pinned": false,
+      "createdAt": 1789815600000
+    }
   ],
   "duty": [
-    {"id":"duty-demo-monday","day":0,"time":"12:00-14:00","task":"学生中心值班","people":["小林","小陈"]},
-    {"id":"duty-demo-wednesday","day":2,"time":"18:30-20:30","task":"活动室巡查","people":["小周"]},
-    {"id":"duty-demo-saturday","day":5,"time":"09:00-11:00","task":"周末资料整理","people":["小林","小周"]}
+    {
+      "id": "duty-demo-monday",
+      "day": 0,
+      "time": "12:00-14:00",
+      "task": "学生中心值班",
+      "people": [
+        "小林",
+        "小陈"
+      ]
+    },
+    {
+      "id": "duty-demo-wednesday",
+      "day": 2,
+      "time": "18:30-20:30",
+      "task": "活动室巡查",
+      "people": [
+        "小周"
+      ]
+    },
+    {
+      "id": "duty-demo-saturday",
+      "day": 5,
+      "time": "09:00-11:00",
+      "task": "周末资料整理",
+      "people": [
+        "小林",
+        "小周"
+      ]
+    }
   ],
-  "attention": [
-    {"id":"attention-demo-1","title":"值班前请提前到岗","body":"请提前十分钟到达值班地点，交接时确认设备和门窗状态。","createdAt":1789819200000},
-    {"id":"attention-demo-2","title":"离岗前完成检查","body":"值班结束后请关闭设备电源，并将现场物品归位。","createdAt":1789812000000}
-  ],
-  "externalRegistration":{"title":"第二课堂值班总结","description":"处理完成后，请打开共享表格填写或修改当次值班总结。","url":"https://365.kdocs.cn/l/cbUAXMQrRYFp","buttonLabel":"打开共享表格"}
+  "externalRegistration": {
+    "title": "第二课堂值班总结",
+    "description": "处理完成后，请打开共享表格填写或修改当次值班总结。",
+    "url": "https://365.kdocs.cn/l/cbUAXMQrRYFp",
+    "buttonLabel": "打开共享表格"
+  }
 }
