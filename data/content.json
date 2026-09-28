@@ -19,8 +19,8 @@
     {
       "id": "duty-demo-monday",
       "day": 0,
-      "time": "12:00-14:00",
-      "task": "学生中心值班",
+      "time": "",
+      "task": "",
       "people": [
         "小林",
         "小陈"
@@ -29,8 +29,8 @@
     {
       "id": "duty-demo-wednesday",
       "day": 2,
-      "time": "18:30-20:30",
-      "task": "活动室巡查",
+      "time": "",
+      "task": "",
       "people": [
         "小周"
       ]
@@ -38,8 +38,8 @@
     {
       "id": "duty-demo-saturday",
       "day": 5,
-      "time": "09:00-11:00",
-      "task": "周末资料整理",
+      "time": "",
+      "task": "",
       "people": [
         "小林",
         "小周"
