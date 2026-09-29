@@ -2,6 +2,637 @@
   "use strict";
 
   const $ = (selector) => document.querySelector(selector);
+  const WEEKDAYS = ["å‘¨ä¸€", "å‘¨äºŒ", "å‘¨ä¸‰", "å‘¨å››", "å‘¨äº”", "å‘¨å…­", "å‘¨æ—¥"];
+  const STORAGE_KEY = "workdesk-admin-connection-v1";
+  const TOKEN_KEY = "workdesk-admin-token-v1";
+  const LOCAL_PREVIEW_KEY = "workdesk-local-preview-v1";
+  const IS_LOCAL_HOST = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+
+  let content = defaultContent();
+  let sha = "";
+  let connection = null;
+  let source = "none";
+  let busy = false;
+
+  function defaultContent() {
+    return {
+      notices: [],
+      duty: [],
+      patrolDuty: [],
+      attention: [],
+      externalRegistration: {
+        title: "æ´»åŠ¨å¤„ç†å¿«é€Ÿç™»è®°",
+        description: "å¤„ç†å®ŒæˆåŽï¼Œè¯·æ‰“å¼€å¤–éƒ¨ç™»è®°è¡¨å¡«å†™æ´»åŠ¨åç§°ã€å¤„ç†äººå’Œå¤„ç†ç»“æžœã€‚",
+        url: "",
+        buttonLabel: "æ‰“å¼€å¿«é€Ÿç™»è®°"
+      }
+    };
+  }
+
+  function esc(value) {
+    return String(value == null ? "" : value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function uid() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function toast(message) {
+    const region = $("#toastRegion");
+    const element = document.createElement("div");
+    element.className = "toast";
+    element.textContent = message;
+    region.appendChild(element);
+    window.setTimeout(() => element.remove(), 3600);
+  }
+
+  function setError(message = "") {
+    const element = $("#errorMessage");
+    element.textContent = message;
+    element.hidden = !message;
+  }
+
+  function syncEditorState() {
+    const ready = source !== "none";
+    const localMode = IS_LOCAL_HOST && ready && !connection;
+    const remoteMode = ready && Boolean(connection) && source.startsWith("github");
+    $("#adminMain").setAttribute("aria-busy", String(busy));
+    $("#connectionFields").disabled = busy;
+    $("#loadLocal").disabled = busy;
+    $("#reloadLocalFile").disabled = busy;
+    $("#editor").disabled = busy || !ready;
+    $("#editor").classList.toggle("hidden", !ready);
+    $("#exportJson").disabled = busy || !ready;
+    $("#saveLocalPreview").disabled = busy || !ready;
+    $("#saveLocalPreview").hidden = !localMode;
+    $("#saveChanges").disabled = busy || !remoteMode;
+    $("#saveChanges").hidden = IS_LOCAL_HOST && !remoteMode;
+    $("#saveChanges").classList.toggle("button-primary", remoteMode);
+    $("#editorHint").textContent = ready
+      ? (localMode ? "å·²åŠ è½½æœ¬åœ°æ•°æ®ï¼Œå¯ä»¥ç›´æŽ¥ç¼–è¾‘ï¼›ä¿®æ”¹åŽç‚¹å‡»â€œä¿å­˜æœ¬åœ°é¢„è§ˆâ€ã€‚" : "å·²åŠ è½½ GitHub æ•°æ®ï¼Œä¿®æ”¹åŽç‚¹å‡»â€œæäº¤åˆ° GitHubâ€ã€‚")
+      : "è¯·å…ˆç‚¹å‡»â€œæœ¬åœ°è¯•ç”¨ï¼ˆæ— éœ€ GitHubï¼‰â€æˆ–å®Œæˆ GitHub è¿žæŽ¥å¹¶è¯»å–ï¼Œç¼–è¾‘å™¨æ‰ä¼šå¯ç”¨ã€‚";
+  }
+
+  function setBusy(next) {
+    busy = next;
+    syncEditorState();
+  }
+
+  function setConnectionBadge(connected) {
+    const badge = $("#connectionBadge");
+    badge.classList.toggle("connected", connected);
+    badge.textContent = connected ? "å·²è¿žæŽ¥" : "æœªè¿žæŽ¥";
+  }
+
+  function setSaveStatus(text) {
+    $("#saveStatus").textContent = text;
+  }
+
+  function setSourceStatus(text) {
+    $("#sourceStatus").textContent = text;
+  }
+
+  function setEditorEnabled(enabled) {
+    if (!enabled) source = "none";
+    syncEditorState();
+  }
+
+  function restoreConnectionFields() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      if (saved.owner) $("#owner").value = saved.owner;
+      if (saved.repo) $("#repo").value = saved.repo;
+      if (saved.branch) $("#branch").value = saved.branch;
+      if (saved.filePath) $("#filePath").value = saved.filePath;
+    } catch (error) {
+      // Ignore invalid local settings.
+    }
+    const token = sessionStorage.getItem(TOKEN_KEY);
+    if (token) $("#token").value = token;
+  }
+
+  function saveConnectionFields() {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        owner: $("#owner").value.trim(),
+        repo: $("#repo").value.trim(),
+        branch: $("#branch").value.trim() || "main",
+        filePath: $("#filePath").value.trim() || "data/content.json"
+      })
+    );
+    sessionStorage.setItem(TOKEN_KEY, $("#token").value.trim());
+  }
+
+  function encodeContentPath(path) {
+    return String(path).split("/").filter(Boolean).map((part) => encodeURIComponent(part)).join("/");
+  }
+
+  function decodeBase64(value) {
+    const binary = atob(String(value || "").replace(/\s/g, ""));
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  function encodeBase64(value) {
+    const bytes = new TextEncoder().encode(value);
+    let binary = "";
+    bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+    return btoa(binary);
+  }
+
+  function validHttpUrl(value) {
+    if (!value) return "";
+    try {
+      const url = new URL(String(value));
+      return /^https?:$/.test(url.protocol) ? url.href : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function mergeContent(parsed) {
+    const base = defaultContent();
+    return {
+      ...base,
+      ...parsed,
+      notices: Array.isArray(parsed?.notices) ? parsed.notices : [],
+      duty: Array.isArray(parsed?.duty) ? parsed.duty : [],
+      patrolDuty: Array.isArray(parsed?.patrolDuty) ? parsed.patrolDuty : [],
+      attention: Array.isArray(parsed?.attention) ? parsed.attention : [],
+      externalRegistration: { ...base.externalRegistration, ...(parsed?.externalRegistration || {}) }
+    };
+  }
+
+  async function githubRequest(url, options = {}) {
+    if (!connection?.token) throw new Error("è¯·å…ˆè¿žæŽ¥ GitHub ä»“åº“");
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${connection.token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        ...(options.headers || {})
+      }
+    });
+    if (response.status === 404) return { notFound: true, response };
+    if (!response.ok) {
+      let detail = "";
+      try { detail = (await response.json()).message || ""; } catch (error) { /* Ignore non-JSON error bodies. */ }
+      throw new Error(detail || `GitHub è¯·æ±‚å¤±è´¥ï¼ˆ${response.status}ï¼‰`);
+    }
+    return { notFound: false, response, data: await response.json() };
+  }
+
+  function renderNotices() {
+    const container = $("#noticeEditor");
+    if (!content.notices.length) {
+      container.innerHTML = '<div class="empty-state">æš‚æ— é€šçŸ¥ï¼Œç‚¹å‡»â€œæ·»åŠ é€šçŸ¥â€å¼€å§‹ã€‚</div>';
+      return;
+    }
+    container.innerHTML = content.notices.map((notice, index) => `
+      <article class="edit-card notice-edit" data-notice-index="${index}">
+        <label><span>æ ‡é¢˜</span><input data-field="title" value="${esc(notice.title || "")}" maxlength="60"></label>
+        <label><span>å†…å®¹</span><textarea data-field="body" rows="2" maxlength="500">${esc(notice.body || "")}</textarea></label>
+        <label class="pin-label"><input data-field="pinned" type="checkbox" ${notice.pinned ? "checked" : ""}><span>ç½®é¡¶æ˜¾ç¤º</span></label>
+        <button class="button button-danger" type="button" data-delete-notice="${index}">åˆ é™¤</button>
+      </article>
+    `).join("");
+  }
+
+  function renderDuty() {
+    const container = $("#dutyEditor");
+    if (!content.duty.length) {
+      container.innerHTML = '<div class="empty-state">æš‚æ— æŽ’ç­ï¼Œç‚¹å‡»â€œæ·»åŠ ç­æ¬¡â€å¼€å§‹ã€‚</div>';
+      return;
+    }
+    container.innerHTML = content.duty.map((item, index) => {
+      const people = Array.isArray(item.people) ? item.people.join("ã€") : "";
+      return `
+        <article class="edit-card duty-edit" data-duty-index="${index}">
+          <label><span>æ˜ŸæœŸ</span><select data-field="day">${WEEKDAYS.map((name, day) => `<option value="${day}" ${Number(item.day) === day ? "selected" : ""}>${name}</option>`).join("")}</select></label>
+          <label><span>äººå‘˜</span><input data-field="people" value="${esc(people)}" maxlength="120" placeholder="ç”¨ã€æˆ–ç©ºæ ¼åˆ†å¼€"></label>
+          <button class="button button-danger" type="button" data-delete-duty="${index}">åˆ é™¤</button>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function renderAttention() {
+    const container = $("#attentionEditor");
+    if (!content.attention.length) {
+      container.innerHTML = '<div class="empty-state">æš‚æ— æ³¨æ„äº‹é¡¹ï¼Œç‚¹å‡»â€œæ·»åŠ æ³¨æ„äº‹é¡¹â€å¼€å§‹ã€‚</div>';
+      return;
+    }
+    container.innerHTML = content.attention.map((item, index) => `
+      <article class="edit-card notice-edit attention-edit" data-attention-index="${index}">
+        <label><span>æ ‡é¢˜</span><input data-field="title" value="${esc(item.title || "")}" maxlength="60"></label>
+        <label><span>å†…å®¹</span><textarea data-field="body" rows="2" maxlength="500">${esc(item.body || "")}</textarea></label>
+        <button class="button button-danger" type="button" data-delete-attention="${index}">åˆ é™¤</button>
+      </article>
+    `).join("");
+  }
+
+  function renderPatrolDuty() {
+    const container = $("#patrolDutyEditor");
+    if (!content.patrolDuty.length) {
+      container.innerHTML = '<div class="empty-state">æš‚æ— å·¡é€»å€¼ç­ï¼Œç‚¹å‡»â€œæ·»åŠ å·¡é€»å‘¨æ¬¡â€å¼€å§‹ã€‚</div>';
+      return;
+    }
+    container.innerHTML = content.patrolDuty.map((item, index) => `
+      <article class="edit-card patrol-duty-edit" data-patrol-duty-index="${index}">
+        <label><span>å‘¨æ¬¡</span><select data-field="week">${[1,2,3].map((week) => `<option value="${week}" ${Number(item.week) === week ? "selected" : ""}>ç¬¬${week}å‘¨</option>`).join("")}</select></label>
+        <label><span>å°ç»„åç§°</span><input data-field="group" value="${esc(item.group || "")}" maxlength="30" placeholder="ç¬¬ä¸€ç»„"></label>
+        <label><span>äººå‘˜</span><input data-field="people" value="${esc(Array.isArray(item.people) ? item.people.join("ã€") : "")}" maxlength="120" placeholder="ç”¨ã€æˆ–ç©ºæ ¼åˆ†å¼€"></label>
+        <button class="button button-danger" type="button" data-delete-patrol-duty="${index}">åˆ é™¤</button>
+      </article>
+    `).join("");
+  }
+
+  function renderExternal() {
+    const external = content.externalRegistration || {};
+    $("#externalTitle").value = external.title || "";
+    $("#externalButtonLabel").value = external.buttonLabel || "";
+    $("#externalUrl").value = external.url || "";
+    $("#externalDescription").value = external.description || "";
+  }
+
+  function renderEditor() {
+    renderNotices();
+    renderDuty();
+    renderPatrolDuty();
+    renderAttention();
+    renderExternal();
+  }
+
+  function readEditorContent(validate = false) {
+    const notices = Array.from(document.querySelectorAll("[data-notice-index]")).map((card, index) => {
+      const existing = content.notices[index] || {};
+      return {
+        id: existing.id || uid(),
+        title: card.querySelector('[data-field="title"]').value.trim(),
+        body: card.querySelector('[data-field="body"]').value.trim(),
+        pinned: card.querySelector('[data-field="pinned"]').checked,
+        createdAt: existing.createdAt || Date.now()
+      };
+    });
+    const duty = Array.from(document.querySelectorAll("[data-duty-index]")).map((card, index) => {
+      const existing = content.duty[index] || {};
+      const people = card.querySelector('[data-field="people"]').value.split(/[ã€ï¼Œ,;ï¼›\s]+/).map((name) => name.trim()).filter(Boolean);
+      return {
+        id: existing.id || uid(),
+        day: Number(card.querySelector('[data-field="day"]').value || 0),
+        people
+      };
+    });
+    const patrolDuty = Array.from(document.querySelectorAll("[data-patrol-duty-index]")).map((card, index) => {
+      const existing = content.patrolDuty[index] || {};
+      const people = card.querySelector('[data-field="people"]').value.split(/[ã€ï¼Œ,;ï¼›\s]+/).map((name) => name.trim()).filter(Boolean);
+      return {
+        id: existing.id || uid(),
+        week: Number(card.querySelector('[data-field="week"]').value || 1),
+        group: card.querySelector('[data-field="group"]').value.trim(),
+        people
+      };
+    });
+    const attention = Array.from(document.querySelectorAll("[data-attention-index]")).map((card, index) => {
+      const existing = content.attention[index] || {};
+      return {
+        id: existing.id || uid(),
+        title: card.querySelector('[data-field="title"]').value.trim(),
+        body: card.querySelector('[data-field="body"]').value.trim(),
+        createdAt: existing.createdAt || Date.now()
+      };
+    });
+    const rawUrl = $("#externalUrl").value.trim();
+    const safeUrl = validHttpUrl(rawUrl);
+    if (validate && rawUrl && !safeUrl) throw new Error("å¤–éƒ¨ç™»è®°ç½‘å€å¿…é¡»æ˜¯å®Œæ•´çš„ http:// æˆ– https:// åœ°å€");
+    return {
+      notices,
+      duty,
+      patrolDuty,
+      attention,
+      externalRegistration: {
+        title: $("#externalTitle").value.trim() || "æ´»åŠ¨å¤„ç†å¿«é€Ÿç™»è®°",
+        description: $("#externalDescription").value.trim(),
+        url: validate ? safeUrl : rawUrl,
+        buttonLabel: $("#externalButtonLabel").value.trim() || "æ‰“å¼€å¿«é€Ÿç™»è®°"
+      }
+    };
+  }
+
+  function compactContent(raw) {
+    return {
+      notices: raw.notices.filter((notice) => notice.title || notice.body),
+      duty: raw.duty.filter((item) => item.people.length),
+      patrolDuty: raw.patrolDuty.filter((item) => item.group || item.people.length),
+      attention: raw.attention.filter((item) => item.title || item.body),
+      externalRegistration: raw.externalRegistration
+    };
+  }
+
+  function collectContent() {
+    content = readEditorContent();
+    return content;
+  }
+
+  async function loadLocalFile() {
+    setBusy(true);
+    setError("");
+    setSaveStatus("æ­£åœ¨è¯»å–æœ¬åœ°æ–‡ä»¶â€¦");
+    try {
+      const response = await fetch(`data/content.json?t=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`æœ¬åœ°æ•°æ®è¯»å–å¤±è´¥ï¼ˆHTTP ${response.status}ï¼‰`);
+      content = mergeContent(await response.json());
+      localStorage.removeItem(LOCAL_PREVIEW_KEY);
+      source = "local-file";
+      connection = null;
+      sha = "";
+      setConnectionBadge(false);
+      renderEditor();
+      setEditorEnabled(true);
+      setSourceStatus("æ•°æ®æ¥æºï¼šæœ¬åœ° data/content.json");
+      setSaveStatus("å·²è¯»å–ï¼Œå¯ç¼–è¾‘");
+      toast("æœ¬åœ°æ–‡ä»¶å·²è¯»å–");
+    } catch (error) {
+      source = "none";
+      connection = null;
+      sha = "";
+      setConnectionBadge(false);
+      setSourceStatus("å°šæœªè¯»å–æ•°æ®ï¼Œç¼–è¾‘åŠŸèƒ½æš‚ä¸å¯ç”¨ã€‚è¯·æ£€æŸ¥æœ¬åœ°æœåŠ¡æ˜¯å¦å¯åŠ¨ã€‚");
+      setSaveStatus("è¯»å–å¤±è´¥");
+      setError(error.message || "æœ¬åœ°æ•°æ®è¯»å–å¤±è´¥");
+      setEditorEnabled(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function loadLocalDraft() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LOCAL_PREVIEW_KEY) || "null");
+      if (!saved || typeof saved !== "object") return false;
+      content = mergeContent(saved);
+      source = "local-draft";
+      connection = null;
+      sha = "";
+      setConnectionBadge(false);
+      renderEditor();
+      setEditorEnabled(true);
+      setSourceStatus("æ•°æ®æ¥æºï¼šæ­¤æµè§ˆå™¨çš„æœ¬åœ°é¢„è§ˆè‰ç¨¿");
+      setSaveStatus("è‰ç¨¿å·²æ¢å¤ï¼Œå¯ç»§ç»­ç¼–è¾‘");
+      return true;
+    } catch (error) {
+      localStorage.removeItem(LOCAL_PREVIEW_KEY);
+      return false;
+    }
+  }
+
+  async function startLocalMode() {
+    if (busy) return;
+    if (!IS_LOCAL_HOST) {
+      toast("æœ¬åœ°è¯•ç”¨ä»…åœ¨ localhost é¢„è§ˆåœ°å€å¯ç”¨");
+      return;
+    }
+    setError("");
+    if (!loadLocalDraft()) await loadLocalFile();
+  }
+
+  async function reloadLocalFile() {
+    if (busy) return;
+    if (source !== "none" && !window.confirm("é‡æ–°è¯»å–æœ¬åœ°æ–‡ä»¶ä¼šæ”¾å¼ƒå½“å‰ç¼–è¾‘å†…å®¹å¹¶æ¸…é™¤æœ¬åœ°è‰ç¨¿ï¼Œç»§ç»­å—ï¼Ÿ")) return;
+    await loadLocalFile();
+  }
+
+  async function connect(event) {
+    event.preventDefault();
+    if (busy) return;
+    const owner = $("#owner").value.trim();
+    const repo = $("#repo").value.trim();
+    const branch = $("#branch").value.trim() || "main";
+    const filePath = $("#filePath").value.trim() || "data/content.json";
+    const token = $("#token").value.trim();
+    if (!owner || !repo || !token) return;
+
+    connection = { owner, repo, branch, filePath, token };
+    saveConnectionFields();
+    sha = "";
+    setBusy(true);
+    setError("");
+    setConnectionBadge(false);
+    setSaveStatus("æ­£åœ¨éªŒè¯ä»“åº“ä¸Žåˆ†æ”¯â€¦");
+    try {
+      const base = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+      const branchResult = await githubRequest(`${base}/branches/${encodeURIComponent(branch)}`);
+      if (branchResult.notFound) throw new Error("ä»“åº“æˆ–åˆ†æ”¯ä¸å­˜åœ¨ï¼Œæˆ–å½“å‰ä»¤ç‰Œæ²¡æœ‰è®¿é—®æƒé™");
+      const path = encodeContentPath(filePath);
+      const result = await githubRequest(`${base}/contents/${path}?ref=${encodeURIComponent(branch)}`);
+      if (result.notFound) {
+        content = defaultContent();
+        source = "github-new";
+        toast("ä»“åº“å·²è¿žæŽ¥ï¼Œæ•°æ®æ–‡ä»¶å°šä¸å­˜åœ¨ï¼Œé¦–æ¬¡æäº¤æ—¶ä¼šè‡ªåŠ¨åˆ›å»ºã€‚");
+      } else {
+        sha = result.data.sha || "";
+        content = mergeContent(JSON.parse(decodeBase64(result.data.content)));
+        source = "github";
+        toast("GitHub æ•°æ®è¯»å–æˆåŠŸ");
+      }
+      renderEditor();
+      setEditorEnabled(true);
+      setConnectionBadge(true);
+      setSourceStatus(`æ•°æ®æ¥æºï¼šGitHub / ${owner}/${repo} Â· ${branch}`);
+      setSaveStatus("å·²è¯»å–ï¼Œå¯ç¼–è¾‘");
+    } catch (error) {
+      connection = null;
+      sha = "";
+      source = "none";
+      setConnectionBadge(false);
+      setEditorEnabled(false);
+      setSourceStatus("å°šæœªè¯»å–æ•°æ®ï¼Œç¼–è¾‘åŠŸèƒ½æš‚ä¸å¯ç”¨ã€‚è¯·å…ˆè¿žæŽ¥å¹¶è¯»å–ã€‚ ");
+      setSaveStatus("è¿žæŽ¥å¤±è´¥");
+      setError(error.message || "è¿žæŽ¥å¤±è´¥ï¼Œè¯·æ£€æŸ¥ä»“åº“ä¿¡æ¯å’Œä»¤ç‰Œæƒé™");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function exportJson() {
+    if (busy || source === "none") return;
+    try {
+      const raw = readEditorContent(true);
+      content = raw;
+      const serialized = `${JSON.stringify(compactContent(raw), null, 2)}\n`;
+      const blob = new Blob([serialized], { type: "application/json;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "content.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+      setSaveStatus("å·²å¯¼å‡ºå½“å‰å†…å®¹");
+    } catch (error) {
+      setError(error.message);
+      toast(error.message);
+    }
+  }
+
+  function saveLocalPreview() {
+    if (busy || source === "none") return;
+    try {
+      const payload = compactContent(readEditorContent(true));
+      localStorage.setItem(LOCAL_PREVIEW_KEY, JSON.stringify(payload));
+      content = mergeContent(payload);
+      source = "local-draft";
+      setError("");
+      renderEditor();
+      setSaveStatus("æœ¬åœ°é¢„è§ˆå·²ä¿å­˜");
+      setSourceStatus("æ•°æ®æ¥æºï¼šæ­¤æµè§ˆå™¨çš„æœ¬åœ°é¢„è§ˆè‰ç¨¿");
+      toast("å·²ä¿å­˜æœ¬åœ°é¢„è§ˆè‰ç¨¿");
+    } catch (error) {
+      setError(error.message);
+      toast(error.message);
+    }
+  }
+
+  async function saveToGithub() {
+    if (busy || !connection || source === "none") {
+      toast("è¯·å…ˆè¿žæŽ¥ GitHub ä»“åº“å¹¶è¯»å–æ•°æ®");
+      return;
+    }
+    if (!window.confirm(`ç¡®è®¤æäº¤åˆ° GitHubï¼Ÿ\nä»“åº“ï¼š${connection.owner}/${connection.repo}\nåˆ†æ”¯ï¼š${connection.branch}\næ–‡ä»¶ï¼š${connection.filePath}`)) return;
+    try {
+      const payload = compactContent(readEditorContent(true));
+      const body = {
+        message: `Update workdesk content ${new Date().toISOString()}`,
+        content: encodeBase64(`${JSON.stringify(payload, null, 2)}\n`),
+        branch: connection.branch
+      };
+      if (sha) body.sha = sha;
+      setBusy(true);
+      setSaveStatus("æ­£åœ¨æäº¤â€¦");
+      const path = encodeContentPath(connection.filePath);
+      const result = await githubRequest(`https://api.github.com/repos/${encodeURIComponent(connection.owner)}/${encodeURIComponent(connection.repo)}/contents/${path}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (result.notFound) throw new Error("æäº¤ç›®æ ‡ä¸å­˜åœ¨æˆ–ä»¤ç‰Œæƒé™ä¸è¶³ï¼Œè¯·é‡æ–°è¿žæŽ¥ä»“åº“ã€‚");
+      sha = result.data.content?.sha || sha;
+      setError("");
+      content = mergeContent(payload);
+      renderEditor();
+      setSaveStatus("å·²æäº¤ï¼ŒGitHub Pages é€šå¸¸ 1â€“2 åˆ†é’ŸåŽæ›´æ–°");
+      toast("å†…å®¹å·²æäº¤åˆ° GitHub");
+    } catch (error) {
+      setSaveStatus("æäº¤å¤±è´¥");
+      setError(error.message || "æäº¤å¤±è´¥ï¼Œè¯·ç¨åŽé‡è¯•");
+      toast(error.message || "æäº¤å¤±è´¥ï¼Œè¯·ç¨åŽé‡è¯•");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function markDirty() {
+    if (!busy && source !== "none") {
+      setSaveStatus(source.startsWith("github") ? "æœ‰æœªæäº¤çš„ä¿®æ”¹" : "æœ‰æœªä¿å­˜çš„æœ¬åœ°ä¿®æ”¹");
+      setError("");
+    }
+  }
+
+  $("#connectionForm").addEventListener("submit", connect);
+  $("#saveChanges").addEventListener("click", saveToGithub);
+  $("#saveLocalPreview").addEventListener("click", saveLocalPreview);
+  $("#exportJson").addEventListener("click", exportJson);
+  $("#loadLocal").addEventListener("click", startLocalMode);
+  $("#reloadLocalFile").addEventListener("click", reloadLocalFile);
+  $("#forgetToken").addEventListener("click", () => {
+    sessionStorage.removeItem(TOKEN_KEY);
+    $("#token").value = "";
+    connection = null;
+    sha = "";
+    setConnectionBadge(false);
+    if (source !== "none") setEditorEnabled(true);
+    $("#saveChanges").disabled = true;
+    toast("å·²æ¸…é™¤å½“å‰æµè§ˆå™¨ä¸­çš„è®¿é—®ä»¤ç‰Œ");
+  });
+  $("#addNotice").addEventListener("click", () => {
+    collectContent();
+    content.notices.unshift({ id: uid(), title: "", body: "", pinned: false, createdAt: Date.now() });
+    renderNotices();
+    markDirty();
+  });
+  $("#addDuty").addEventListener("click", () => {
+    collectContent();
+    content.duty.push({ id: uid(), day: 0, people: [] });
+    renderDuty();
+    markDirty();
+  });
+  $("#addPatrolDuty").addEventListener("click", () => {
+    collectContent();
+    content.patrolDuty.push({ id: uid(), week: Math.min(content.patrolDuty.length + 1, 3), group: "", people: [] });
+    renderPatrolDuty();
+    markDirty();
+  });
+  $("#addAttention").addEventListener("click", () => {
+    collectContent();
+    content.attention.unshift({ id: uid(), title: "", body: "", createdAt: Date.now() });
+    renderAttention();
+    markDirty();
+  });
+  $("#noticeEditor").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-notice]");
+    if (!button) return;
+    collectContent();
+    content.notices.splice(Number(button.dataset.deleteNotice), 1);
+    renderNotices();
+    markDirty();
+  });
+  $("#dutyEditor").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-duty]");
+    if (!button) return;
+    collectContent();
+    content.duty.splice(Number(button.dataset.deleteDuty), 1);
+    renderDuty();
+    markDirty();
+  });
+  $("#patrolDutyEditor").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-patrol-duty]");
+    if (!button) return;
+    collectContent();
+    content.patrolDuty.splice(Number(button.dataset.deletePatrolDuty), 1);
+    renderPatrolDuty();
+    markDirty();
+  });
+  $("#attentionEditor").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-attention]");
+    if (!button) return;
+    collectContent();
+    content.attention.splice(Number(button.dataset.deleteAttention), 1);
+    renderAttention();
+    markDirty();
+  });
+  $("#editor").addEventListener("input", markDirty);
+  $("#editor").addEventListener("change", markDirty);
+
+  restoreConnectionFields();
+  if (IS_LOCAL_HOST) {
+    $("#localPanel").hidden = false;
+    $("#githubDetails").open = false;
+    setSourceStatus("å…ˆé€‰æ‹©æœ¬åœ°è¯•ç”¨ï¼Œå³å¯ç¼–è¾‘å¹¶é¢„è§ˆç½‘ç«™å†…å®¹ï¼Œæ— éœ€è¿žæŽ¥ GitHubã€‚");
+  }
+  setEditorEnabled(false);
+  setConnectionBadge(false);
+})();
+(() => {
+  "use strict";
+
+  const $ = (selector) => document.querySelector(selector);
   const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
   const STORAGE_KEY = "workdesk-admin-connection-v1";
   const TOKEN_KEY = "workdesk-admin-token-v1";
