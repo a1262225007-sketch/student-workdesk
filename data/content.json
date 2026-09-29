@@ -2,7 +2,7 @@
   "notices": [
     {
       "id": "notice-demo-pinned",
-      "title": "本周值班安排已更新",
+      "title": "本周值班安排已更新1",
       "body": "请各位同学按最新排班准时到岗，如需调班请提前联系负责人。",
       "pinned": true,
       "createdAt": 1789772400000
