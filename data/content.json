@@ -2,7 +2,7 @@
   "notices": [
     {
       "id": "notice-demo-pinned",
-      "title": "本周值班安排已更新1",
+      "title": "本周值班安排已更新",
       "body": "请各位同学按最新排班准时到岗，如需调班请提前联系负责人。",
       "pinned": true,
       "createdAt": 1789772400000
@@ -20,23 +20,49 @@
       "id": "duty-demo-monday",
       "day": 0,
       "people": [
-        "小林",
-        "小陈111"
+        "测试名字1"
       ]
     },
     {
       "id": "duty-demo-wednesday",
-      "day": 2,
+      "day": 1,
       "people": [
-        "小周"
+        "测试名字2"
       ]
     },
     {
       "id": "duty-demo-saturday",
+      "day": 2,
+      "people": [
+        "测试名字3"
+      ]
+    },
+    {
+      "id": "mumm2y70-qexzzl",
+      "day": 3,
+      "people": [
+        "测试名字4"
+      ]
+    },
+    {
+      "id": "mumm2yga-zjjnvm",
+      "day": 4,
+      "people": [
+        "测试名字5"
+      ]
+    },
+    {
+      "id": "mumm2yqh-dt466s",
       "day": 5,
       "people": [
-        "小林",
-        "小周"
+        "测试名字6"
+      ]
+    },
+    {
+      "id": "mumm2z15-x4m5sk",
+      "day": 6,
+      "people": [
+        "测试名字7"
       ]
     }
   ],
@@ -46,8 +72,8 @@
       "week": 1,
       "group": "第一组",
       "people": [
-        "小林",
-        "小陈"
+        "陈子阳",
+        "邹书剑"
       ]
     },
     {
@@ -55,7 +81,8 @@
       "week": 2,
       "group": "第二组",
       "people": [
-        "小周"
+        "黄幸妮",
+        "丁宁"
       ]
     },
     {
@@ -63,22 +90,18 @@
       "week": 3,
       "group": "第三组",
       "people": [
-        "小王"
+        "王思源",
+        "郭子越",
+        "苟帅"
       ]
     }
   ],
   "attention": [
     {
       "id": "attention-demo-1",
-      "title": "值班前请提前到岗",
-      "body": "请提前十分钟到达值班地点，交接时确认设备和门窗状态。",
+      "title": "每天值班的同学记得完成工作",
+      "body": "请提前每天早中晚至少查看一次邮箱，工作群的通知记得及时回复",
       "createdAt": 1789819200000
-    },
-    {
-      "id": "attention-demo-2",
-      "title": "离岗前完成检查",
-      "body": "值班结束后请关闭设备电源，并将现场物品归位。",
-      "createdAt": 1789812000000
     }
   ],
   "externalRegistration": {
