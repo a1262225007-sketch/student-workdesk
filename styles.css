@@ -887,3 +887,8 @@ ul { list-style: none; padding: 0; margin: 0; }
   .preview-notice { align-items: flex-start; flex-direction: column; gap: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* final patrol layout override */
+.modules{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(180px,.5fr)!important;grid-template-rows:minmax(220px,auto) minmax(230px,auto) minmax(220px,auto)!important;grid-template-areas:"attention attention duty" "registration notices duty" "patrol patrol duty"!important}
+@media(max-width:850px){.modules{grid-template-columns:1fr!important;grid-template-rows:none!important;grid-template-areas:"attention" "registration" "notices" "duty" "patrol"!important}}
+body>.app~.app{display:none!important}
