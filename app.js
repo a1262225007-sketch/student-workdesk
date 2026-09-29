@@ -2,6 +2,312 @@
   "use strict";
 
   const $ = (selector) => document.querySelector(selector);
+  const WEEKDAYS = ["å‘¨ä¸€", "å‘¨äºŒ", "å‘¨ä¸‰", "å‘¨å››", "å‘¨äº”", "å‘¨å…­", "å‘¨æ—¥"];
+  const CONTENT_PATH = window.WORKDESK_CONTENT_PATH || "data/content.json";
+  const SITES = Array.isArray(window.WORKDESK_SITES) ? window.WORKDESK_SITES : [];
+  const LOCAL_PREVIEW_KEY = "workdesk-local-preview-v1";
+  const IS_LOCAL_HOST = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+  const IS_LOCAL_PREVIEW = IS_LOCAL_HOST && new URLSearchParams(window.location.search).get("preview") === "1";
+
+  const ICONS = {
+    external:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
+    refresh:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"/><path d="M3 21v-5h5"/></svg>',
+    clipboard:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4V2h6v2"/><path d="M9 11h6"/><path d="M9 15h6"/><path d="M9 19h4"/></svg>'
+  };
+
+  document.querySelectorAll("[data-icon]").forEach((element) => {
+    const icon = ICONS[element.dataset.icon];
+    if (icon) element.innerHTML = icon;
+  });
+
+  function esc(value) {
+    return String(value == null ? "" : value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function todayIndex() {
+    return (new Date().getDay() + 6) % 7;
+  }
+
+  function formatTime(timestamp) {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("zh-CN", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date);
+  }
+
+  function validHttpUrl(value) {
+    try {
+      const url = new URL(String(value || ""));
+      return /^https?:$/.test(url.protocol) ? url.href : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function refreshToday() {
+    $("#todayLine").textContent = new Intl.DateTimeFormat("zh-CN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long"
+    }).format(new Date());
+  }
+
+  function setStatus(online, text, failed = false) {
+    const badge = $("#dataBadge");
+    badge.classList.toggle("online", online);
+    badge.classList.toggle("failed", failed);
+    $("#dataStatus").textContent = text;
+  }
+
+  function applySites() {
+    SITES.forEach((site) => {
+      const entry = document.getElementById(`${site.id}Entry`);
+      const name = document.getElementById(`siteName-${site.id}`);
+      const url = document.getElementById(`siteUrl-${site.id}`);
+      if (entry) {
+        const safeUrl = validHttpUrl(site.url);
+        if (safeUrl) entry.href = safeUrl;
+        else entry.removeAttribute("href");
+      }
+      if (name) name.textContent = site.name;
+      if (url) url.textContent = site.url;
+    });
+  }
+
+  function renderNotices(notices, failed = false) {
+    const list = $("#noticeList");
+    const sorted = notices.filter((notice) => notice && typeof notice === "object").sort((left, right) => {
+      if (Boolean(right.pinned) !== Boolean(left.pinned)) {
+        return Number(Boolean(right.pinned)) - Number(Boolean(left.pinned));
+      }
+      return Number(right.createdAt || 0) - Number(left.createdAt || 0);
+    });
+
+    $("#noticeSub").textContent = `${sorted.length} æ¡`;
+    if (!sorted.length) {
+      list.innerHTML = `<li class="empty-state${failed ? " error-state" : ""}">${failed ? "é€šçŸ¥è¯»å–å¤±è´¥ï¼Œè¯·ç‚¹å‡»å³ä¸Šè§’åˆ·æ–°é‡è¯•" : "æš‚æ— å…¬å…±é€šçŸ¥"}</li>`;
+      return;
+    }
+
+    list.innerHTML = sorted
+      .map((notice) => {
+        const meta = [];
+        if (notice.pinned) meta.push('<span class="pin-flag">ç½®é¡¶</span>');
+        if (notice.createdAt) meta.push(`<span>${formatTime(notice.createdAt)}</span>`);
+        return `
+          <li class="notice-item${notice.pinned ? " is-pinned" : ""}">
+            <div class="notice-content">
+              ${meta.length ? `<div class="notice-meta">${meta.join("")}</div>` : ""}
+              <div class="notice-title-line">
+                <h3>${esc(notice.title || "æœªå‘½åé€šçŸ¥")}</h3>
+              </div>
+              ${notice.body ? `<p class="notice-body">${esc(notice.body)}</p>` : ""}
+            </div>
+          </li>
+        `;
+      })
+      .join("");
+  }
+
+  function renderDuty(duty, failed = false) {
+    const table = $("#dutyTable");
+    const sorted = duty.filter((item) => item && typeof item === "object").sort((left, right) => {
+      return Number(left.day || 0) - Number(right.day || 0);
+    });
+
+    $("#dutySub").textContent = `${sorted.length} ä¸ªç­æ¬¡`;
+    const head = `
+      <div class="table-head">
+        <span>æ˜ŸæœŸ</span>
+        <span>å€¼ç­äººå‘˜</span>
+      </div>
+    `;
+
+    if (!sorted.length) {
+      table.classList.remove("has-four-columns");
+      table.innerHTML = `${head}<div class="empty-state${failed ? " error-state" : ""}">${failed ? "å€¼ç­è¯»å–å¤±è´¥ï¼Œè¯·ç‚¹å‡»å³ä¸Šè§’åˆ·æ–°é‡è¯•" : "æš‚æ— æ˜ŸæœŸå€¼ç­"}</div>`;
+      return;
+    }
+
+    const rows = sorted
+      .map((item) => {
+        const people = Array.isArray(item.people) ? item.people : [];
+        const chips = people
+          .map((person) => `<span class="chip">${esc(person)}</span>`)
+          .join("");
+        const current = Number(item.day) === todayIndex() ? " current" : "";
+        return `
+          <div class="duty-row${current}">
+            <span class="cell-strong">${WEEKDAYS[Number(item.day)] || "-"}${current ? '<small class="today-tag">ä»Šæ—¥</small>' : ""}</span>
+            <div class="people-chips" data-label="å€¼ç­äººå‘˜">${chips || '<span class="cell-sub">æœªå¡«å†™</span>'}</div>
+          </div>
+        `;
+      })
+      .join("");
+
+    table.classList.add("has-four-columns");
+    table.innerHTML = `${head}${rows}`;
+  }
+
+  function renderPatrolDuty(patrolDuty, failed = false) {
+    const list = $("#patrolList");
+    const sorted = patrolDuty.filter((item) => item && typeof item === "object").sort((a, b) => Number(a.week || 0) - Number(b.week || 0));
+    $("#patrolSub").textContent = `${sorted.length} ç»„`;
+    if (!sorted.length) {
+      list.innerHTML = `<div class="empty-state${failed ? " error-state" : ""}">${failed ? "å·¡é€»å€¼ç­è¯»å–å¤±è´¥ï¼Œè¯·ç‚¹å‡»å³ä¸Šè§’åˆ·æ–°é‡è¯•" : "æš‚æ— å·¡é€»å€¼ç­"}</div>`;
+      return;
+    }
+    list.innerHTML = sorted.map((item) => {
+      const people = Array.isArray(item.people) ? item.people : [];
+      const chips = people.map((person) => `<span class="chip">${esc(person)}</span>`).join("");
+      return `<div class="patrol-row"><span class="patrol-week">ç¬¬${Number(item.week) || "-"}å‘¨</span><span class="patrol-group">${esc(item.group || "æœªå‘½åå°ç»„")}</span><div class="people-chips">${chips || '<span class="cell-sub">æœªå¡«å†™</span>'}</div></div>`;
+    }).join("");
+  }
+
+  function renderAttention(attention, failed = false) {
+    const list = $("#attentionList");
+    const sorted = attention
+      .filter((item) => item && typeof item === "object")
+      .sort((left, right) => Number(right.createdAt || 0) - Number(left.createdAt || 0));
+
+    $("#attentionSub").textContent = `${sorted.length} æ¡`;
+    if (!sorted.length) {
+      list.innerHTML = `<li class="empty-state${failed ? " error-state" : ""}">${failed ? "æ³¨æ„äº‹é¡¹è¯»å–å¤±è´¥ï¼Œè¯·ç‚¹å‡»å³ä¸Šè§’åˆ·æ–°é‡è¯•" : "æš‚æ— æ³¨æ„äº‹é¡¹"}</li>`;
+      return;
+    }
+
+    list.innerHTML = sorted.map((item) => `
+      <li class="attention-item">
+        <div class="attention-mark" aria-hidden="true">!</div>
+        <div class="attention-content">
+          <div class="attention-meta">${item.createdAt ? formatTime(item.createdAt) : "æé†’"}</div>
+          <h3>${esc(item.title || "æ³¨æ„äº‹é¡¹")}</h3>
+          ${item.body ? `<p>${esc(item.body)}</p>` : ""}
+        </div>
+      </li>
+    `).join("");
+  }
+
+  function renderExternalRegistration(registration) {
+    const config = registration && typeof registration === "object" ? registration : {};
+    const url = validHttpUrl(config.url);
+    $("#quickRegName").textContent = config.title || "æ´»åŠ¨å¤„ç†å¿«é€Ÿç™»è®°";
+    $("#quickRegDescription").textContent =
+      config.description || "å¤„ç†å®ŒæˆåŽï¼Œè¯·æ‰“å¼€å¤–éƒ¨ç™»è®°è¡¨å¡«å†™å¤„ç†ç»“æžœã€‚";
+    $("#quickRegLabel").textContent = config.buttonLabel || "æ‰“å¼€å¿«é€Ÿç™»è®°";
+    $("#quickRegStatus").textContent = url ? "å°†åœ¨æ–°æ ‡ç­¾é¡µæ‰“å¼€å¤–éƒ¨è¡¨æ ¼" : "å°šæœªé…ç½®å¤–éƒ¨ç™»è®°ç½‘å€";
+
+    const link = $("#quickRegLink");
+    if (url) {
+      link.href = url;
+      link.classList.remove("is-disabled");
+      link.removeAttribute("aria-disabled");
+      link.removeAttribute("tabindex");
+    } else {
+      link.removeAttribute("href");
+      link.classList.add("is-disabled");
+      link.setAttribute("aria-disabled", "true");
+      link.setAttribute("tabindex", "-1");
+    }
+  }
+
+  function toast(message) {
+    const region = $("#toastRegion");
+    const element = document.createElement("div");
+    element.className = "toast";
+    element.textContent = message;
+    region.appendChild(element);
+    window.setTimeout(() => element.remove(), 2600);
+  }
+
+  function renderContent(content, failed = false) {
+    renderDuty(Array.isArray(content.duty) ? content.duty : [], failed);
+    renderNotices(Array.isArray(content.notices) ? content.notices : [], failed);
+    renderExternalRegistration(content.externalRegistration);
+    renderAttention(Array.isArray(content.attention) ? content.attention : [], failed);
+    renderPatrolDuty(Array.isArray(content.patrolDuty) ? content.patrolDuty : [], failed);
+  }
+
+  function showLocalPreviewNotice(hasDraft = false) {
+    const notice = $("#previewNotice");
+    if (!notice) return;
+    notice.classList.toggle("hidden", !hasDraft);
+    if (hasDraft) {
+      notice.innerHTML = '<strong>æœ¬åœ°é¢„è§ˆæ¨¡å¼</strong><span>å½“å‰å†…å®¹æ¥è‡ªæµè§ˆå™¨ä¸­çš„æœ¬åœ°è‰ç¨¿ï¼Œä¸ä¼šè‡ªåŠ¨å†™å…¥ GitHubã€‚è¿”å›ž <a href="admin.html">åŽå°</a> å¯ç¼–è¾‘æˆ–å¯¼å‡º JSONã€‚</span>';
+    }
+  }
+
+  function readLocalPreview() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LOCAL_PREVIEW_KEY) || "null");
+      if (!saved || typeof saved !== "object") return null;
+      return saved;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function loadContent(showFeedback = false) {
+    setStatus(false, "è¯»å–ä¸­");
+    try {
+      const localContent = IS_LOCAL_PREVIEW ? readLocalPreview() : null;
+      showLocalPreviewNotice(Boolean(localContent));
+      if (localContent) {
+        renderContent(localContent);
+        setStatus(true, "æœ¬åœ°é¢„è§ˆ");
+        if (showFeedback) toast("æœ¬åœ°è‰ç¨¿å·²åˆ·æ–°");
+        return;
+      }
+      const response = await fetch(`${CONTENT_PATH}?t=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const content = await response.json();
+      renderContent(content);
+      setStatus(true, "å·²åŒæ­¥");
+      if (showFeedback) toast("æ•°æ®å·²åˆ·æ–°");
+    } catch (error) {
+      setStatus(false, "è¯»å–å¤±è´¥");
+      renderContent({}, true);
+      setStatus(false, "è¯»å–å¤±è´¥", true);
+      if (showFeedback) toast("æ•°æ®è¯»å–å¤±è´¥ï¼Œè¯·ç¨åŽé‡è¯•");
+    }
+  }
+
+  $("#openBothBtn").addEventListener("click", () => {
+    SITES.forEach((site) => {
+      const url = validHttpUrl(site.url);
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+    });
+    toast("å·²è¯·æ±‚æ‰“å¼€ä¸¤ä¸ªç«™ç‚¹ï¼›å¦‚è¢«æµè§ˆå™¨æ‹¦æˆªï¼Œè¯·å…è®¸å¼¹å‡ºçª—å£æˆ–åˆ†åˆ«ç‚¹å‡»å…¥å£ã€‚");
+  });
+
+  $("#refreshBtn").addEventListener("click", () => loadContent(true));
+  $("#quickRegLink").addEventListener("click", (event) => {
+    if ($("#quickRegLink").classList.contains("is-disabled")) event.preventDefault();
+  });
+
+  refreshToday();
+  applySites();
+  showLocalPreviewNotice();
+  loadContent();
+})();
+(() => {
+  "use strict";
+
+  const $ = (selector) => document.querySelector(selector);
   const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
   const CONTENT_PATH = window.WORKDESK_CONTENT_PATH || "data/content.json";
   const SITES = Array.isArray(window.WORKDESK_SITES) ? window.WORKDESK_SITES : [];
