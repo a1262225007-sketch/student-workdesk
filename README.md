@@ -1,64 +1,52 @@
-# 学生部门工作台（GitHub Pages 版）
+# 学生部门工作台
 
-这个版本可以免费托管在 GitHub Pages。部署完成后：
+纯静态单页工作台，可在本地预览并部署到 GitHub Pages。公开首页提供素拓平台、163 邮箱入口、公共通知、活动处理登记、星期值班、注意事项和三周轮换的巡逻值班。
 
-- 你的电脑关机，网站仍然在线
-- 同学不需要安装程序，直接打开网址
-- 公共通知和星期排班由你通过后台修改
-- 活动处理登记跳转到外部无需登录的表单
+## 本地预览
 
-## 首次部署
+在 Windows 上双击 `start-preview.bat`，或在项目目录运行：
 
-1. 登录 GitHub，新建一个 **Public** 仓库。
-2. 把这个目录里的所有文件上传到仓库根目录。
-3. 打开仓库的 `Settings` -> `Pages`。
-4. 在 `Build and deployment` 中选择：
-   - Source: `Deploy from a branch`
-   - Branch: `main`
-   - Folder: `/ (root)`
-5. 保存后等待 1-2 分钟。公开地址通常是：
+```bash
+python -m http.server 4173 --bind 127.0.0.1
+```
 
-   `https://你的用户名.github.io/仓库名/`
+- 首页：`http://127.0.0.1:4173/`
+- 后台：`http://127.0.0.1:4173/admin.html`
+- 本地草稿预览：`http://127.0.0.1:4173/?preview=1`
 
-6. 后台地址是同一地址后面加 `admin.html`：
+后台的“本地试用”只在 localhost 上显示。草稿仅存放在当前浏览器的 localStorage，不会修改仓库文件或线上网站；确认后可导出 JSON，手动替换 `data/content.json`。
 
-   `https://你的用户名.github.io/仓库名/admin.html`
+## 数据结构
 
-公开页面不显示后台入口，知道后台地址但没有访问令牌的人不能修改内容。
+数据来自 `data/content.json`：
 
-## 配置后台
+- `notices`：公共通知，支持标题、内容、置顶和创建时间。
+- `duty`：星期值班，每项只保存 `id`、周一至周日索引 `day`（0–6）和人员数组 `people`。
+- `patrolDuty`：巡逻值班，`week` 为第 1、2、3 周，另有小组名称 `group` 和人员数组 `people`。三周轮换，第 4 周从第一组重新开始。
+- `attention`：注意事项，支持标题、内容和创建时间。
+- `externalRegistration`：外部登记卡片的标题、说明、按钮文字和链接。
 
-1. 打开后台地址。
-2. 填写 GitHub 用户名、仓库名、分支和数据文件路径。
-   - 数据文件路径保持 `data/content.json`
-3. 创建 Fine-grained Personal Access Token：
-   - 地址：https://github.com/settings/personal-access-tokens/new
-   - Repository access：只选择这个工作台仓库
-   - Permissions：`Contents` 选择 `Read and write`
-4. 把令牌粘贴到后台并点击“连接并读取”。
+公开页面只读；修改数据须在后台保存本地预览，或连接 GitHub 后提交到仓库。公共通知过多时可在通知卡片内滚动。
 
-令牌只保存在当前浏览器标签页，不会提交到 GitHub。关闭标签页后需要重新连接。
+## GitHub Pages 部署
 
-## 日常维护
+将 `index.html`、`styles.css`、`config.js`、`app.js`、`admin.html`、`admin.css`、`admin.js`、`data/content.json`、`.nojekyll` 和本 README 上传至公开仓库根目录。在仓库 `Settings → Pages` 选择 `Deploy from a branch`、`main`、`/(root)`。
 
-在后台可以：
+公开页：`https://a1262225007-sketch.github.io/student-workdesk/`
 
-- 添加、删除、置顶公共通知
-- 添加、删除星期排班
-- 设置外部活动处理登记表单的标题、说明、按钮文字和网址
+后台页：`https://a1262225007-sketch.github.io/student-workdesk/admin.html`
 
-修改后点击“提交到 GitHub”。GitHub Pages 通常需要 1-2 分钟更新公开页面。
+## 后台连接 GitHub
 
-## 外部快速登记表单
+在后台填写 GitHub 用户名、仓库、分支、文件路径和 Fine-grained Personal Access Token：
 
-可以使用腾讯问卷、金山表单、Microsoft Forms 或其它支持匿名提交的服务。创建表单后：
+```text
+用户名：a1262225007-sketch
+仓库：student-workdesk
+分支：main
+文件路径：data/content.json
+```
 
-1. 把表单权限设置为“无需登录”或“允许匿名填写”。
-2. 复制公开填写链接。
-3. 在后台的“活动处理快速登记”里粘贴链接并提交。
+Token 应仅授权此仓库，Repository permissions 的 `Contents` 设为 `Read and write`。Token 只保存在当前浏览器标签页的 sessionStorage，不写入仓库。连接并读取后编辑，点击“提交到 GitHub”写回 JSON；GitHub Pages 通常需要约 1–2 分钟部署更新。
 
-本网站只负责跳转，不再自己维护处理登记表。
-
-## 可选：绑定自己的域名
-
-先在阿里云、腾讯云等域名商购买域名，再在 GitHub Pages 的 `Custom domain` 中填写域名，并按 GitHub 提示配置 DNS。域名需要按域名商要求完成实名认证。
+请勿把 Token 粘贴到聊天、截图或仓库文件中。公开后台地址并不等于身份验证，真正的写入权限依赖 Token。

@@ -1,218 +1,11 @@
-<html lang="zh-CN"><head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>学生部门工作台</title>
-  <link rel="stylesheet" href="styles.css?v=20260920a">
-</head>
-<body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true">部</span>
-        <div class="brand-text">
-          <h1>学生部门工作台</h1>
-          <p class="today-line" id="todayLine">2026年9月29日星期二</p>
-        </div>
-      </div>
-      <div class="top-actions">
-        <span id="dataBadge" class="sync-badge online"><span class="sync-dot"></span><span id="dataStatus">已同步</span></span>
-        <button id="refreshBtn" class="btn btn-ghost" type="button">
-          <span data-icon="refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"></path><path d="M3 21v-5h5"></path></svg></span><span>刷新</span>
-        </button>
-      </div>
-    </header>
-
-    <main class="main">
-      <aside id="previewNotice" class="preview-notice hidden" role="status"></aside>
-      <noscript><p class="preview-notice">请启用 JavaScript，以读取通知和星期排班。</p></noscript>
-      <section class="site-section" aria-labelledby="siteTitle">
-        <div class="section-head">
-          <div>
-            <span class="section-kicker">WORKSPACE / LINKS</span>
-            <h2 id="siteTitle">站点入口</h2>
-            <p class="section-sub">常用平台集中入口</p>
-          </div>
-          <div class="section-tools">
-            <button id="openBothBtn" class="btn btn-primary" type="button">
-              <span data-icon="external"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span><span>同时打开两个</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="site-grid">
-          <a class="site-entry erke" id="erkeEntry" href="https://erke.gdut.edu.cn/public/index.php/cgi/login" target="_blank" rel="noopener">
-            <span class="site-mark" aria-hidden="true">素</span>
-            <span class="site-copy">
-              <strong id="siteName-erke">素拓平台</strong>
-              <span class="site-url" id="siteUrl-erke">https://erke.gdut.edu.cn/public/index.php/cgi/login</span>
-            </span>
-            <span class="site-open" data-icon="external"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span>
-          </a>
-
-          <a class="site-entry mail" id="mailEntry" href="https://mail.163.com/" target="_blank" rel="noopener">
-            <span class="site-mark" aria-hidden="true">邮</span>
-            <span class="site-copy">
-              <strong id="siteName-mail">163邮箱</strong>
-              <span class="site-url" id="siteUrl-mail">https://mail.163.com/</span>
-            </span>
-            <span class="site-open" data-icon="external"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span>
-          </a>
-        </div>
-      </section>
-
-      <section class="modules">
-        <section class="panel panel-duty" aria-labelledby="dutyTitle">
-          <header class="panel-head">
-            <div>
-              <span class="panel-kicker">WEEKLY DUTY</span>
-              <h2 id="dutyTitle">星期值班</h2>
-              <p class="panel-sub" id="dutySub">3 个班次</p>
-            </div>
-          </header>
-          <div class="panel-body table-body">
-            <div class="duty-table has-four-columns" id="dutyTable" role="table" aria-label="星期值班">
-      <div class="table-head">
-        <span>星期</span>
-        <span>值班人员</span>
-      </div>
-    
-          <div class="duty-row">
-            <span class="cell-strong">周一</span>
-            <div class="people-chips" data-label="值班人员"><span class="chip">小林</span><span class="chip">小陈</span></div>
-          </div>
-        
-          <div class="duty-row">
-            <span class="cell-strong">周三</span>
-            <div class="people-chips" data-label="值班人员"><span class="chip">小周</span></div>
-          </div>
-        
-          <div class="duty-row">
-            <span class="cell-strong">周六</span>
-            <div class="people-chips" data-label="值班人员"><span class="chip">小林</span><span class="chip">小周</span></div>
-          </div>
-        </div>
-          </div>
-        </section>
-
-        <section class="panel panel-notices" aria-labelledby="noticeTitle">
-          <header class="panel-head">
-            <div>
-              <span class="panel-kicker">UPDATES</span>
-              <h2 id="noticeTitle">公共通知</h2>
-              <p class="panel-sub" id="noticeSub">2 条</p>
-            </div>
-          </header>
-          <div class="panel-body">
-            <ul class="notice-list" id="noticeList">
-          <li class="notice-item is-pinned">
-            <div class="notice-content">
-              <div class="notice-meta"><span class="pin-flag">置顶</span><span>9/19 07:00</span></div>
-              <div class="notice-title-line">
-                <h3>本周值班安排已更新</h3>
-              </div>
-              <p class="notice-body">请各位同学按最新排班准时到岗，如需调班请提前联系负责人。</p>
-            </div>
-          </li>
-        
-          <li class="notice-item">
-            <div class="notice-content">
-              <div class="notice-meta"><span>9/19 19:00</span></div>
-              <div class="notice-title-line">
-                <h3>活动材料归档提醒</h3>
-              </div>
-              <p class="notice-body">本周活动结束后，请将签到、照片和总结材料整理到对应文件夹。</p>
-            </div>
-          </li>
-        </ul>
-          </div>
-        </section>
-
-        <section class="panel panel-registration" aria-labelledby="quickRegTitle">
-          <header class="panel-head">
-            <div>
-              <span class="panel-kicker">ACTION</span>
-              <h2 id="quickRegTitle">活动处理登记</h2>
-              <p class="panel-sub">外部快速登记</p>
-            </div>
-          </header>
-          <div class="panel-body quick-reg-body">
-            <div class="quick-reg-mark" aria-hidden="true">
-              <span data-icon="clipboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="18" rx="2"></rect><path d="M9 4V2h6v2"></path><path d="M9 11h6"></path><path d="M9 15h6"></path><path d="M9 19h4"></path></svg></span>
-            </div>
-            <div class="quick-reg-copy">
-              <h3 id="quickRegName">第二课堂值班总结</h3>
-              <p id="quickRegDescription">处理完成后，请打开共享表格填写或修改当次值班总结。</p>
-            </div>
-            <div class="quick-reg-action">
-              <a id="quickRegLink" class="btn btn-primary quick-reg-link" href="https://365.kdocs.cn/l/cbUAXMQrRYFp" target="_blank" rel="noopener">
-                <span data-icon="external"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span><span id="quickRegLabel">打开共享表格</span>
-              </a>
-              <span id="quickRegStatus" class="quick-reg-status">将在新标签页打开外部表格</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel panel-attention" aria-labelledby="attentionTitle">
-          <header class="panel-head">
-            <div>
-              <span class="panel-kicker">REMINDER</span>
-              <h2 id="attentionTitle">注意事项</h2>
-              <p class="panel-sub" id="attentionSub">2 条</p>
-            </div>
-          </header>
-          <div class="panel-body">
-            <ul class="attention-list" id="attentionList">
-      <li class="attention-item">
-        <div class="attention-mark" aria-hidden="true">!</div>
-        <div class="attention-content">
-          <div class="attention-meta">9/19 20:00</div>
-          <h3>值班前请提前到岗</h3>
-          <p>请提前十分钟到达值班地点，交接时确认设备和门窗状态。</p>
-        </div>
-      </li>
-    
-      <li class="attention-item">
-        <div class="attention-mark" aria-hidden="true">!</div>
-        <div class="attention-content">
-          <div class="attention-meta">9/19 18:00</div>
-          <h3>离岗前完成检查</h3>
-          <p>值班结束后请关闭设备电源，并将现场物品归位。</p>
-        </div>
-      </li>
-    </ul>
-          </div>
-        </section>
-
-        <section class="panel panel-patrol" aria-labelledby="patrolTitle">
-          <header class="panel-head">
-            <div>
-              <span class="panel-kicker">PATROL ROTATION</span>
-              <h2 id="patrolTitle">巡逻值班</h2>
-              <p class="panel-sub" id="patrolSub">3 组</p>
-            </div>
-          </header>
-          <div class="panel-body">
-            <div class="patrol-list" id="patrolList"><div class="patrol-row"><span class="patrol-week">第1周</span><span class="patrol-group">第一组</span><div class="people-chips"><span class="chip">小林</span><span class="chip">小陈</span></div></div><div class="patrol-row"><span class="patrol-week">第2周</span><span class="patrol-group">第二组</span><div class="people-chips"><span class="chip">小周</span></div></div><div class="patrol-row"><span class="patrol-week">第3周</span><span class="patrol-group">第三组</span><div class="people-chips"><span class="chip">小王</span></div></div></div>
-          </div>
-        </section>
-      </section>
-    </main>
-  </div>
-
-  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="config.js?v=20260920b"></script>
-  <script src="app.js?v=20260920b"></script>
-
-
-</body></html><!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>学生部门工作台</title>
-  <link rel="stylesheet" href="styles.css?v=20260920a">
+  <link rel="stylesheet" href="styles.css?v=20260929-clean">
 </head>
 <body>
   <div class="app">
@@ -334,12 +127,25 @@
             <ul class="attention-list" id="attentionList"></ul>
           </div>
         </section>
+
+        <section class="panel panel-patrol" aria-labelledby="patrolTitle">
+          <header class="panel-head">
+            <div>
+              <span class="panel-kicker">PATROL ROTATION</span>
+              <h2 id="patrolTitle">巡逻值班</h2>
+              <p class="panel-sub" id="patrolSub">0 组</p>
+            </div>
+          </header>
+          <div class="panel-body">
+            <div class="patrol-list" id="patrolList"></div>
+          </div>
+        </section>
       </section>
     </main>
   </div>
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="config.js?v=20260920b"></script>
-  <script src="app.js?v=20260920b"></script>
+  <script src="config.js?v=20260929-clean"></script>
+  <script src="app.js?v=20260929-clean"></script>
 </body>
 </html>
