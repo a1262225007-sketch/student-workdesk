@@ -70,28 +70,56 @@
     {
       "id": "patrol-week-1",
       "week": 1,
-      "group": "第一组",
+      "group": "第一次",
       "people": [
-        "陈子阳",
-        "邹书剑"
+        "陈子阳"
       ]
     },
     {
       "id": "patrol-week-2",
-      "week": 2,
-      "group": "第二组",
+      "week": 1,
+      "group": "第二次",
       "people": [
-        "黄幸妮",
-        "丁宁"
+        "邹书剑"
       ]
     },
     {
       "id": "patrol-week-3",
-      "week": 3,
+      "week": 1,
       "group": "第三组",
       "people": [
-        "王思源",
-        "郭子越",
+        "黄幸妮"
+      ]
+    },
+    {
+      "id": "mv0k65lh-p7oqu7",
+      "week": 1,
+      "group": "第四次",
+      "people": [
+        "丁宁"
+      ]
+    },
+    {
+      "id": "mv0k65x4-vhofr9",
+      "week": 1,
+      "group": "第五次",
+      "people": [
+        "王思源"
+      ]
+    },
+    {
+      "id": "mv0k6688-xug6c4",
+      "week": 1,
+      "group": "第六次",
+      "people": [
+        "郭子越"
+      ]
+    },
+    {
+      "id": "mv0k66ir-20i4mm",
+      "week": 1,
+      "group": "第七次",
+      "people": [
         "苟帅"
       ]
     }
